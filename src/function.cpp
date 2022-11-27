@@ -3,7 +3,9 @@
 #include <Wire.h>
 
 #define echoPin 26 // attach pin D2 Arduino to pin Echo of HC-SR04
-#define trigPin 25 //attach pin D3 Arduino to pin Trig of HC-SR04
+#define trigPin 25 //attach pin D3 Arduino to pin Trig of HC-SR0
+#define relay 27
+#define LED 3
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
@@ -20,7 +22,7 @@ void lcdInit()
   lcd.init();                      // initialize the lcd 
   lcd.backlight();
   lcd.setCursor(1,0);
-  lcd.print("Pertamina tapi di minum");
+  lcd.print("Pertaminum");
   lcd.setCursor(1,1);
   lcd.print("LTF 3");
 }
