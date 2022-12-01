@@ -1,4 +1,3 @@
-#pragma once
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 #include <Keypad.h>
@@ -12,3 +11,5 @@
 void usSig();
 void lcdInit();
 void lcdPrint(int distance);
+// void clearData();
+// void backSpace();

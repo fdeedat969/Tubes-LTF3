@@ -30,4 +30,3 @@ void lcdPrint(int distance)
   lcd.print(distance);
   lcd.print(" cm");
 }
-
