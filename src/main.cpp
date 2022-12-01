@@ -1,22 +1,17 @@
 #include "function.h"
-#include <Keypad.h>
 
 #define ROW_NUM     4 // four rows
 #define COLUMN_NUM  3 // three columns
-
-char dataKey[4];
-int dataKeyInt;
-int i = 0;
 
 char keys[ROW_NUM][COLUMN_NUM] = {
   {'1', '2', '3'},
   {'4', '5', '6'},
   {'7', '8', '9'},
-  {'*', '0', '#'},
+  {'*', '0', '#'}
 };
 
-byte pin_rows[ROW_NUM] = {19, 18, 5, 17}; // GIOP18, GIOP5, GIOP17, GIOP16 connect to the row pins
-byte pin_column[COLUMN_NUM] = {16, 4, 2};  // GIOP4, GIOP0, GIOP2 connect to the column pins
+byte pin_rows[ROW_NUM] = {16, 17, 18, 19}; 
+byte pin_column[COLUMN_NUM] = {14, 27, 26};  
 
 Keypad keypad = Keypad( makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_NUM );
 
@@ -40,22 +35,22 @@ void setup() {
 
 void loop() {
   // multitasking with millis
-  // unsigned long currentTime = millis();
-  // if (currentTime - previousTime >= interval1) { 
-  //   previousTime = currentTime;
-  //   usSig();
-  //   duration = pulseIn(echoPin,HIGH);
+  unsigned long currentTime = millis();
+  if (currentTime - previousTime >= interval1) { 
+    previousTime = currentTime;
+    usSig();
+    duration = pulseIn(echoPin,HIGH);
 
-  //   distance1 = 19.44 - (0.0178*duration - 0.7605);
-  //   lcdPrint(distance1);
-  //   //Serial.print("Distance: ");
-  //   //Serial.println(distance1);
-  // }
+    distance1 = 19.44 - (0.0178*duration - 0.7605);
+    lcdPrint(distance1);
+    Serial.print("Distance: ");
+    Serial.println(distance1);
+   }
   char keypressed = keypad.getKey();
   if (keypressed){
-    //dataKey[i] = keypressed;
+    dataKey[i] = keypressed;
     Serial.println(keypressed);
-    // Serial.println(dataKey);
-    // i++;
+    Serial.println(dataKey);
+    i++;
   }
 }
