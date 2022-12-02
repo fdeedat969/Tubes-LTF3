@@ -1,8 +1,13 @@
 #include "function.h"
+#include <Arduino.h>
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+#include <Keypad.h>
 
 #define ROW_NUM     4 // four rows
 #define COLUMN_NUM  3 // three columns
 
+// define the symbols on the buttons of the keypads
 char keys[ROW_NUM][COLUMN_NUM] = {
   {'1', '2', '3'},
   {'4', '5', '6'},
@@ -20,12 +25,16 @@ int duration; // variable for the duration of sound wave travel
 float height = 0; // variable for the distance measurement
 unsigned long previousTime = 0;
 unsigned long interval1 = 500;
-unsigned long interval2 = 50;
+unsigned long interval2 = 1000;
+volatile byte pulseCount;
+byte pulse1sec = 0;
+float flowRate;
 
-int i = 0;
 char dataKey[5];
 int dataKeyInt;
+int i = 0;
 
+// this two function should be moved to function.cpp but idk how to someone pls fix
 void clearData(){
   while (i != 0){
     dataKey[i--] = 0;
@@ -38,19 +47,25 @@ void backSpace(){
   }
 }
 
+void IRAM_ATTR pulseCounter()
+{
+  pulseCount++;
+}
+
 void setup() {
   Wire.begin();
   lcdInit();
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(echoPin, INPUT); // Sets the echoPin as an INPUT
-  pinMode(relay, OUTPUT);
   pinMode(LED, OUTPUT);
+  pinMode(flowSens,INPUT_PULLUP);
   Serial.begin(9600); // Serial Communication is starting with 9600 of baudrate speed
-  //delay(3000);
+  attachInterrupt(digitalPinToInterrupt(flowSens), pulseCounter, FALLING);
 }
 
 void loop() {
   // multitasking with millis
+  // Ultrasonic Reading 
   unsigned long currentTime = millis();
   if (currentTime - previousTime >= interval1) { 
     previousTime = currentTime;
@@ -62,6 +77,18 @@ void loop() {
     //Serial.print("Distance: ");
     //Serial.println(height);
    }
+
+  // Flowsensor Reading
+  if (currentTime - previousTime >= interval2) { 
+    previousTime = currentTime;
+    pulse1sec = pulseCount;
+    pulseCount = 0;
+    flowRate = ((float)pulse1sec);
+
+    Serial.print("Flow rate: ");
+    Serial.print(int(flowRate));
+  }
+
   char keypressed = keypad.getKey();
   if (keypressed){
     if (keypressed == '*'){
@@ -69,10 +96,8 @@ void loop() {
     } else if(keypressed == '#'){
       dataKeyInt = atoi(dataKey);
       if (height >= dataKeyInt){
-        digitalWrite(relay, HIGH);
         digitalWrite(LED, HIGH);
       } else {
-        digitalWrite(relay, LOW);
         digitalWrite(LED, LOW);
       }
       clearData();
