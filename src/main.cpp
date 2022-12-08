@@ -26,7 +26,7 @@ long previousMillis = 0;
 int interval = 1000;
 int interval1 = 250;
 boolean ledState = LOW;
-float calibrationFactor = 4.5;
+float calibrationFactor = 7.5;
 volatile byte pulseCount;
 byte pulse1Sec = 0;
 float flowRate;
@@ -37,7 +37,7 @@ char dataKey[5];
 int dataKeyInt;
 int i = 0;
 
-// this three function should be moved to function.cpp but idk how to someone pls fix
+// these three function should be moved to function.cpp but idk how to someone pls fix
 void clearData(){
   while (i != 0){
     dataKey[i--] = 0;
@@ -75,7 +75,6 @@ void setup() {
 
 void loop() {
   // multitasking with millis
-  currentMillis = millis();
   // Keypad Reading
   char keypressed = keypad.getKey();
   if (keypressed){
@@ -86,9 +85,10 @@ void loop() {
       Serial.print("Input: ");
       Serial.println(dataKeyInt);
       clearData();
-      while(totalMilliLitres < dataKeyInt){
+      while(totalMilliLitres <= dataKeyInt){
         digitalWrite(LED, HIGH);
-        delay(2000);
+        digitalWrite(relay, HIGH);
+        currentMillis = millis();
         if (currentMillis - previousMillis > interval) {
           
           pulse1Sec = pulseCount;
@@ -98,16 +98,23 @@ void loop() {
           previousMillis = millis();
 
           flowMilliLitres = (flowRate / 60) * 1000;
+
+          totalMilliLitres += flowMilliLitres;
+          Serial.println(flowMilliLitres);
+          //Serial.println(totalMilliLitres);
+          //Serial.println("=================");
         }
       }
       digitalWrite(LED, LOW);
+      digitalWrite(relay, LOW);
+      dataKeyInt = 0;
       totalMilliLitres = 0;
     }
     else{
       dataKey[i] = keypressed;
       dataKeyInt = atoi(dataKey);
       Serial.println(keypressed);
-      Serial.println(dataKey);
+      Serial.println(dataKey);+
       i++; 
     }
   }   
