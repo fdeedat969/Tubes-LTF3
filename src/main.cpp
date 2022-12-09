@@ -4,6 +4,8 @@
 #include <Wire.h>
 #include <Keypad.h>
 
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
 #define ROW_NUM     4 // four rows
 #define COLUMN_NUM  3 // three columns
 
@@ -22,22 +24,24 @@ Keypad keypad = Keypad( makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_
 
 // defines variables
 long currentMillis = 0;
+long currentMillis1 = 0;
 long previousMillis = 0;
-int interval = 1000;
-int interval1 = 250;
+int intervalFlow = 125;
+int intervalUs = 1500;
 boolean ledState = LOW;
 float calibrationFactor = 7.5;
-volatile byte pulseCount;
 byte pulse1Sec = 0;
 float flowRate;
-unsigned int flowMilliLitres;
-unsigned long totalMilliLitres = 0;
+float flowMilliLitres;
+float totalMilliLitres = 0;
 
 char dataKey[5];
 int dataKeyInt;
 int i = 0;
 
-// these three function should be moved to function.cpp but idk how to someone pls fix
+volatile byte pulseCount;
+
+// All these function should be moved to function.cpp but idk how to someone pls fix
 void clearData(){
   while (i != 0){
     dataKey[i--] = 0;
@@ -53,6 +57,27 @@ void backSpace(){
 void IRAM_ATTR pulseCounter()
 {
   pulseCount++;
+}
+
+void lcdInit()
+{
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(1,0);
+  lcd.print("Pertaminum");
+  lcd.setCursor(1,1);
+  lcd.print("LTF 3");
+}
+
+void lcdPrint(int distance)
+{
+  lcd.clear();
+  lcd.backlight();
+  lcd.setCursor(0,0);
+  lcd.print("Input: ");
+  lcd.setCursor(7,0);
+  lcd.print(distance);
+  lcd.print(" mL");
 }
 
 void setup() {
@@ -71,6 +96,9 @@ void setup() {
   Serial.begin(9600);
 
   attachInterrupt(digitalPinToInterrupt(flowSens), pulseCounter, FALLING);
+  delay(3000);
+  lcd.clear();
+  lcdPrint(dataKeyInt);
 }
 
 void loop() {
@@ -79,30 +107,34 @@ void loop() {
   char keypressed = keypad.getKey();
   if (keypressed){
     if (keypressed == '*'){
-      backSpace();
+      clearData();
+      lcd.clear();
+      lcd.print("Input: ");
+      lcd.setCursor(7,0);
+      lcd.print("0");
+      lcd.print(" mL");
     } else if(keypressed == '#'){
       dataKeyInt = atoi(dataKey);
-      Serial.print("Input: ");
-      Serial.println(dataKeyInt);
       clearData();
-      while(totalMilliLitres <= dataKeyInt){
-        digitalWrite(LED, HIGH);
-        digitalWrite(relay, HIGH);
+      digitalWrite(LED, HIGH);
+      digitalWrite(relay, HIGH);      
+      delay(1000);
+      while(totalMilliLitres <= (dataKeyInt)){
         currentMillis = millis();
-        if (currentMillis - previousMillis > interval) {
-          
-          pulse1Sec = pulseCount;
-          pulseCount = 0;
+        // FLow Sensor Reading
+        if (currentMillis - previousMillis >= intervalFlow) {  // Refresh rate 8Hz
+          detachInterrupt(flowSens);
 
-          flowRate = ((1000.0 / (millis() - previousMillis)) * pulse1Sec) / calibrationFactor;
-          previousMillis = millis();
+          flowRate = ((1000.0 / (currentMillis - previousMillis)) * pulseCount) / calibrationFactor;
+          previousMillis = currentMillis;
 
-          flowMilliLitres = (flowRate / 60) * 1000;
+          flowMilliLitres = ((flowRate / 60) * 1000)/8;
 
           totalMilliLitres += flowMilliLitres;
+
           Serial.println(flowMilliLitres);
-          //Serial.println(totalMilliLitres);
-          //Serial.println("=================");
+          pulseCount = 0;
+          attachInterrupt(digitalPinToInterrupt(flowSens), pulseCounter, FALLING);
         }
       }
       digitalWrite(LED, LOW);
@@ -113,39 +145,37 @@ void loop() {
     else{
       dataKey[i] = keypressed;
       dataKeyInt = atoi(dataKey);
+      lcdPrint(dataKeyInt);
       Serial.println(keypressed);
       Serial.println(dataKey);+
       i++; 
     }
   }   
-  // // Ultrasonic Reading 
-  // currentMillis = millis();
-  // if (currentMillis- previousMillis > interval1) { 
-  //   previousMillis= currentMillis;
-  //   usSig();
-  //   int duration = pulseIn(echoPin,HIGH);
-
-  //   float volume= -6.8804*(duration) + 12943;
-  //   lcdPrint(volume);
-  //   Serial.print("Volume: ");
-  //   Serial.print(volume);
-  //   Serial.println(" ml");
-  //  }
-
-  // // Flowsensor Reading
-  // if (currentMillis - previousMillis > interval) {
+  // Ultrasonic Reading 
+  currentMillis = millis();
+  if (currentMillis- previousMillis > intervalUs) { 
+    previousMillis = currentMillis;
+    usSig();
+    int duration = pulseIn(echoPin,HIGH);
     
-  //   pulse1Sec = pulseCount;
-  //   pulseCount = 0;
+    float volume = -0.0069*(duration) + 12.943;
+    if (volume < 0){
+      volume = 0;
+    }
+    lcd.setCursor(0,1);
+    lcd.print("US: ");
+    lcd.setCursor(3,1);
+    lcd.print("     ");
+    lcd.setCursor(3,1);
+    lcd.printf("%.1f", volume);
+    lcd.print("L");
 
-  //   flowRate = ((1000.0 / (millis() - previousMillis)) * pulse1Sec) / calibrationFactor;
-  //   previousMillis = millis();
-
-  //   flowMilliLitres = (flowRate / 60) * 1000;
-
-
-    // Serial.print("Flow rate: ");
-    // Serial.print(flowMilliLitres);  // Print the integer part of the variable
-    // Serial.print("mL/s");
-    // Serial.print("\t");       // Print tab space
+    lcd.setCursor(9,1);
+    lcd.print("FS: ");
+    lcd.setCursor(12,1);
+    lcd.print("     ");
+    lcd.setCursor(12,1);
+    lcd.printf("%d", totalMilliLitres);
+    lcd.print("mL");
+   }
 }
