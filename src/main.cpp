@@ -24,7 +24,6 @@ Keypad keypad = Keypad( makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_
 
 // defines variables
 long currentMillis = 0;
-long currentMillis1 = 0;
 long previousMillis = 0;
 int intervalFlow = 125;
 int intervalUs = 1500;
@@ -120,19 +119,32 @@ void loop() {
       digitalWrite(relay, HIGH);      
       delay(1000);
       while(totalMilliLitres <= (dataKeyInt)){
+        currentMillis = 0;
         currentMillis = millis();
         // FLow Sensor Reading
-        if (currentMillis - previousMillis >= intervalFlow) {  // Refresh rate 8Hz
+        if (currentMillis - previousMillis >= intervalFlow) {  // Refreshes every 125ms
           detachInterrupt(flowSens);
 
           flowRate = ((1000.0 / (currentMillis - previousMillis)) * pulseCount) / calibrationFactor;
           previousMillis = currentMillis;
 
           flowMilliLitres = ((flowRate / 60) * 1000)/8;
+          if (flowMilliLitres > 4.5){ // this is retarded but it works so fight me
+            flowMilliLitres = 4.532;
+          }
 
           totalMilliLitres += flowMilliLitres;
 
           Serial.println(flowMilliLitres);
+
+          lcd.setCursor(9,1);
+          lcd.print("FS: ");
+          lcd.setCursor(12,1);
+          lcd.print("     ");
+          lcd.setCursor(12,1);
+          lcd.printf("%d", totalMilliLitres);
+          lcd.print("mL");
+
           pulseCount = 0;
           attachInterrupt(digitalPinToInterrupt(flowSens), pulseCounter, FALLING);
         }
