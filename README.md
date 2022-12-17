@@ -1,3 +1,3 @@
 # Tubes-LTF3
 
-An IoT based water volume monitoring system
+An ESP32 based water dispenser system with soon to be added IoT features.
