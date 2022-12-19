@@ -1,13 +1,12 @@
-#include "function.h"
 #include <Arduino.h>
-#include <LiquidCrystal_I2C.h>
+#include "function.h"
 #include <Wire.h>
 #include <Keypad.h>
-
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+#include <LiquidCrystal_I2C.h>
 
 #define ROW_NUM     4 // four rows
 #define COLUMN_NUM  3 // three columns
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 // define the symbols on the buttons of the keypads
 char keys[ROW_NUM][COLUMN_NUM] = {
@@ -40,15 +39,8 @@ int i = 0;
 
 volatile byte pulseCount;
 
-// All these function should be moved to function.cpp but idk how to someone pls fix
 void clearData(){
   while (i != 0){
-    dataKey[i--] = 0;
-  }
-}
-
-void backSpace(){
-  if (i != 0){
     dataKey[i--] = 0;
   }
 }
@@ -58,36 +50,9 @@ void IRAM_ATTR pulseCounter() // Interrupt Service Routine
   pulseCount++;
 }
 
-void lcdInit()
-{
-  lcd.init();
-  lcd.backlight();
-  lcd.setCursor(1,0);
-  lcd.print("Pertaminum");
-  lcd.setCursor(1,1);
-  lcd.print("LTF 3");
-}
-
-void lcdPrint(int distance)
-{
-  lcd.clear();
-  lcd.backlight();
-  lcd.setCursor(0,0);
-  lcd.print("Input: ");
-  lcd.setCursor(7,0);
-  lcd.print(distance);
-  lcd.print(" mL");
-}
-
-int priceCalc(int distance)
-{
-  // linear regression of the prices y = 9.0597x - 1166.6
-  return (9.0597 * distance) - 1166.6;
-}
-
 void setup() {
   Wire.begin();
-  lcdInit();
+  lcdInit(lcd);
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(echoPin, INPUT); // Sets the echoPin as an INPUT
   pinMode(LED, OUTPUT);
@@ -103,7 +68,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(flowSens), pulseCounter, FALLING);
   delay(3000);
   lcd.clear();
-  lcdPrint(dataKeyInt);
+  lcdPrint(dataKeyInt, lcd);
 }
 
 void loop() {
@@ -123,7 +88,7 @@ void loop() {
       dataKeyInt = atoi(dataKey);
       int limit = dataKeyInt/100;
       clearData();
-      for (int i = 0; i <limit ; i++){
+      for (int i = 0; i < limit ; i++){
         digitalWrite(LED, HIGH);
         digitalWrite(relay, HIGH);      
         delay(1000);
@@ -190,7 +155,7 @@ void loop() {
     else{
       dataKey[i] = keypressed;
       dataKeyInt = atoi(dataKey);
-      lcdPrint(dataKeyInt);
+      lcdPrint(dataKeyInt, lcd);
       Serial.println(keypressed);
       Serial.println(dataKey);+
       i++; 
